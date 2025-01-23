@@ -1,7 +1,5 @@
 # Decided this file was short enough to leave everything here, but I've added notes about how I would break a larger backend up into particular folders
 import base64
-import json
-from datetime import datetime
 from typing import List
 
 from fastapi import FastAPI, Depends
@@ -9,11 +7,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from pydantic import AfterValidator, BaseModel, ValidationError
-from typing_extensions import Annotated
 from sqlalchemy import create_engine, Column, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import declarative_base, joinedload, mapped_column, Mapped, relationship, sessionmaker, Session
 
+from models.exceptions import CustomException
+from models.audio_session_input import AudioSessionInput
+# from controllers.audio_controller import processed_audio
 
 app = FastAPI()
 
@@ -23,34 +22,10 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Create validation checks
-# Place in a helper folder
-def has_value(value: str) -> str:
-  if len(value) > 0:
-    return value
-  raise ValueError("A field is empty")
-
-def has_values(values: list) -> list:
-  if not values:
-    raise ValueError("List of audio files is empty")
-  return values
 
 # Define Classes
 # Decided to give File and Session a one to many relationship
-# Place in models folder
-class CustomException(Exception):
-  def __init__(self, status_code: int, message: str):
-    self.status_code = status_code
-    self.message = message
-
-class AudioFileInput(BaseModel):
-  file_name: Annotated[str, AfterValidator(has_value)]
-  encoded_audio: Annotated[str, AfterValidator(has_value)]
-class AudioSessionInput(BaseModel):
-  session_id: Annotated[str, AfterValidator(has_value)]
-  timestamp: datetime
-  audio_files: Annotated[List[AudioFileInput], AfterValidator(has_values)]
-
+# move classes to a models folder
 class AudioFile(Base):
   __tablename__ = "audio_file_table"
   id: Mapped[int] = mapped_column(primary_key = True, autoincrement=True)
